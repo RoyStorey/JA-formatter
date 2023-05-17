@@ -85,7 +85,6 @@ class Member_Data_Extractor():
     def get_member_data(self, data, tables) -> dict:
         self.still_in_AF_flag=False
         data_dict = {
-
             "mbrrank":'',
             "Last Name":'',
             "First": '',
@@ -95,11 +94,13 @@ class Member_Data_Extractor():
             "Race":'',
             "Date of Birth":'',
             "Date of Rank":'',
+            "Date of Separation":'',
             "TAFMS Date":'',
             "Clearance":'',
             "marital":'',
             "BaseRow1":'',
             "UnitOffice SymbolRow1":'',
+            "Dropdown8":'',
             "Duty TitleRow1":'',
             "BaseRow2":'',
             "UnitOffice SymbolRow2":'',
@@ -109,13 +110,12 @@ class Member_Data_Extractor():
             "Duty TitleRow3":'',
             "BaseRow4":'',
             "UnitOffice SymbolRow4":'',
-            "Duty TitleRow4":'',
+            "Duty TitleRow4":''
             }
-        
-        params = ['Name','SSAN','Gr/DOR','EX/RACE/ETH-GR','TAFMSD','DOB','DOS','Security Clearance','Duty title']
+
+        # params = ['Name','SSAN','Gr/DOR','EX/RACE/ETH-GR','TAFMSD','DOB','DOS','Security Clearance','Duty title']
         #expand on filtering through array instead of listing all individually
         for block in data:
-
             if 'lines' in block:
                 for line in block['lines']:
                     for span in line['spans']:
@@ -139,14 +139,20 @@ class Member_Data_Extractor():
                         elif 'DOB' in span['text']:
                                 data_dict['Date of Birth']=line['spans'][1]['text']
                         elif 'DOS' in span['text']:
-                                data_dict['Date of Seperation']=line['spans'][1]['text']
-                        elif 'Security Clearance' in span['text']:
+                                data_dict['Date of Separation']=line['spans'][1]['text']
+                        elif 'SEC CLNC' in span['text']:
                                 data_dict['Clearance']=line['spans'][1]['text']
+                        elif 'Command:' in span['text']:
+                                data_dict['Dropdown8']=line['spans'][1]['text']
                         elif 'Duty Title' in span['text']:
                                 data_dict["Duty TitleRow1"]=line['spans'][1]['text']
                                 self.still_in_AF_flag=True
                         elif 'Marital' in span['text']:
-                             print(span['text'])
+                                print(span['text'])
+                        elif 'DEGREE' in span['text']:
+                                print(line['spans'][1]['text'])
+
+
                     #print([spans for spans in line['spans'] if [x for x in spans if 'DUTY TITLE' in spans['text']]])
                     if [spans for spans in line['spans'] if [x for x in spans if 'DUTY TITLE' in spans['text']]]:
                         wait = True
@@ -196,9 +202,14 @@ class Member_Data_Extractor():
     def fill_out_pdf(self, data_dict) -> None:
         myfile = PdfFileReader("./assets/AFDW Court-Board Member Data Sheet.pdf")
 
-
         page= myfile.getPage(0)
         writer = PdfFileWriter()
+
+        annotations = page['/Annots']
+
+        for annotation in annotations:
+            print(annotation.getObject())
+
         self.set_need_appearances_writer(writer)
         writer.updatePageFormFieldValues(page, fields=data_dict)
         writer.addPage(page)
@@ -216,4 +227,4 @@ class Member_Data_Extractor():
 #TODO Can G-series orders be found on this?
 #TODO Is there ever anything below Duty history in a SURF?
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
